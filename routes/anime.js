@@ -9,9 +9,9 @@ const {
 } = require('../controllers/anime');
 
 router.get('/', listAnime);
-router.get('/:Rank', getAnimeByID);
+router.get('/:id', getAnimeByID);
 router.post('/', addAnime);
-router.put('/:Rank', updateAnime);
-router.delete('/:Rank', deleteAnime);
+router.put('/:id', updateAnime);
+router.delete('/:id', deleteAnime);
 
 module.exports = router;
