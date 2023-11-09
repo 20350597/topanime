@@ -1,0 +1,19 @@
+meta {
+  name: Create
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:3000/api/v1/anime
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "Rank": "1",
+    "Title": "Nuevo",
+    "Score": "5.7"
+  }
+}

@@ -20,23 +20,36 @@ const listAnime = async (req = request, res = response) => {
 
 const getAnimeByID = async (req = request, res = response) => {
   const { id } = req.params;
-  if (isNaN(id)) {
-    res.status(400).json({ msg: `The ID ${id} is invalid` });
-    return;
-  }
 
   let conn;
 
   try {
     conn = await pool.getConnection();
-    const [anime] = await conn.query('SELECT * FROM anime WHERE id = ?', [id]);
 
-    if (!anime) {
-      res.status(404).json({ msg: `Anime with ID ${id} not found` });
+    let query;
+    let params;
+
+    if (id) {
+      if (isNaN(id)) {
+        res.status(400).json({ msg: `The Rank ${id} is invalid` });
+        return;
+      }
+
+      query = 'SELECT * FROM anime WHERE Rank = ?';
+      params = [id];
+    } else {
+      query = 'SELECT * FROM anime';
+      params = [];
+    }
+
+    const anime = await conn.query(query, params);
+
+    if (!anime || anime.length === 0) {
+      res.status(404).json({ msg: `Anime not found` });
       return;
     }
 
-    res.json(anime);
+    res.json(anime); 
   } catch (error) {
     console.log(error);
     res.status(500).json(error);
@@ -46,6 +59,7 @@ const getAnimeByID = async (req = request, res = response) => {
     }
   }
 }
+
 
 const addAnime = async (req = request, res = response) => {
   const { Rank, Title, Score } = req.body;
@@ -77,30 +91,40 @@ const addAnime = async (req = request, res = response) => {
 }
 
 const updateAnime = async (req = request, res = response) => {
+  let conn;
+
   const { Rank, Title, Score } = req.body;
   const { id } = req.params;
 
-  if (isNaN(id) || isNaN(Rank) || !Title || isNaN(Score)) {
-    res.status(400).json({ msg: 'Invalid input data' });
+  if (isNaN(id)) {
+    res.status(400).json({ msg: `The Rank ${id} is invalid` });
     return;
   }
 
-  let conn;
-
   try {
     conn = await pool.getConnection();
+
     const [animeExists] = await conn.query('SELECT * FROM anime WHERE Rank = ?', [id]);
 
-    if (!animeExists) {
+    if (!animeExists || animeExists.is_active === 0) {
       res.status(404).json({ msg: `Anime with Rank ${id} not found` });
       return;
     }
 
-    const animeUpdated = await conn.query('UPDATE anime SET Rank = ?, Title = ?, Score = ? WHERE Rank = ?', [Rank, Title, Score, id]);
+    // Construir la nueva información del anime
+    const newAnimeData = {
+      Rank: Rank || animeExists.Rank,
+      Title: Title || animeExists.Title,
+      Score: Score || animeExists.Score,
+    };
 
-    if (animeUpdated.affectedRows === 0) {
-      throw new Error('Anime not updated');
-    }
+    // Actualizar el anime en la base de datos
+    await conn.query('UPDATE anime SET Rank = ?, Title = ?, Score = ? WHERE Rank = ?', [
+      newAnimeData.Rank,
+      newAnimeData.Title,
+      newAnimeData.Score,
+      id,
+    ]);
 
     res.json({ msg: 'Anime updated successfully' });
   } catch (error) {
@@ -112,6 +136,7 @@ const updateAnime = async (req = request, res = response) => {
     }
   }
 }
+
 
 const deleteAnime = async (req = request, res = response) => {
   const { id } = req.params;
